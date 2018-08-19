@@ -1,0 +1,22 @@
+# global
+**/.classpath
+**/.project
+**/.settings
+*.iml
+**/build
+**/target
+*.log
+**/log/
+**/logs/
+**/generated-sources/
+
+# /
+/.settings
+/.classpath
+/.project
+/*.iml
+/.idea
+/logs
+/generated
+/.gradle
+alert-db/catalog-report.html
