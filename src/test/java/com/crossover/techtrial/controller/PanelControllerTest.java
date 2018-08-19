@@ -1,6 +1,10 @@
 package com.crossover.techtrial.controller;
 
+import com.crossover.techtrial.model.HourlyElectricity;
 import com.crossover.techtrial.model.Panel;
+import com.crossover.techtrial.repository.PanelRepository;
+import com.crossover.techtrial.service.HourlyElectricityService;
+import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,12 +16,15 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.time.LocalDateTime;
 
 
 /**
@@ -34,9 +41,15 @@ public class PanelControllerTest {
   
   @Mock
   private PanelController panelController;
+
+  @Autowired
+  private PanelRepository panelRepository;
   
   @Autowired
   private TestRestTemplate template;
+
+  @Autowired
+  private HourlyElectricityService hourlyElectricityService;
 
   @Before
   public void setup() throws Exception {
@@ -57,5 +70,46 @@ public class PanelControllerTest {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     return new HttpEntity<Object>(body, headers);
+  }
+
+  @Test
+  public void saveElectricityTest() {
+    String serial = new RandomString(12).nextString();
+    HourlyElectricity hourlyElectricity = new HourlyElectricity();
+    Panel panel = new Panel();
+    panel.setBrand("Test");
+    panel.setLatitude(100.0);
+    panel.setLongitude(23.3);
+    panel.setSerial(serial);
+    Panel panelSaved = panelRepository.save(panel);
+
+    hourlyElectricity.setGeneratedElectricity(44353L);
+    hourlyElectricity.setReadingAt(LocalDateTime.now());
+    hourlyElectricity.setPanel(panelSaved);
+    hourlyElectricityService.save(hourlyElectricity);
+
+    String url = "/api/panels/" + serial + "/hourly";
+    ResponseEntity<HourlyElectricity> response = template.getForEntity(url, HourlyElectricity.class);
+    Assert.assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test public void getElectricityStatisticsForPanelTest(){
+    String serial = new RandomString(12).nextString();
+    HourlyElectricity hourlyElectricity = new HourlyElectricity();
+    Panel panel = new Panel();
+    panel.setBrand("Test");
+    panel.setLatitude(200.0);
+    panel.setLongitude(100.9);
+    panel.setSerial(serial);
+
+    Panel panelSaved = panelRepository.save(panel);
+
+    hourlyElectricity.setGeneratedElectricity(501020L);
+    hourlyElectricity.setReadingAt(LocalDateTime.now());
+    hourlyElectricity.setPanel(panelSaved);
+
+    String url = "/api/panels/" + serial + "/daily";
+    ResponseEntity<String> response = template.getForEntity(url, String.class);
+    Assert.assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 }
